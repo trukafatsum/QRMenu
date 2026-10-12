@@ -58,3 +58,14 @@ describe('Menu persistence and request ordering', () => {
     expect(store.getSnapshot().dirty).toBe(false);
   });
 });
+
+it('saves immediate actions and restores the previous view when a save fails', async () => {
+  const transport = vi.fn().mockResolvedValueOnce(response()).mockImplementationOnce(async (_, options) => ({ menu: JSON.parse(options.body).menu, revision: 'v2' })).mockRejectedValueOnce(new Error('Connection failed'));
+  const store = new MenuStore(transport); await store.reload(true);
+  expect(await store.commit(menu => ({ ...menu, items: menu.items.map(item => ({ ...item, available: false })) }))).toBe(true);
+  expect(store.getSnapshot().dirty).toBe(false);
+  const previous = store.getSnapshot().menu;
+  expect(await store.commit(menu => ({ ...menu, categories: [], items: [] }))).toBe(false);
+  expect(store.getSnapshot().menu).toEqual(previous);
+  expect(store.getSnapshot().error).toBe('Connection failed');
+});

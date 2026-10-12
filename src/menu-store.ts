@@ -21,6 +21,14 @@ export class MenuStore {
     this.generation++;
     this.set({ menu: change(this.state.menu), loading: false, error: '' });
   };
+  commit = async (change: (menu: MenuState) => MenuState): Promise<boolean> => {
+    if (this.state.saving || !this.state.loaded) return false;
+    if (this.state.dirty) { this.set({ error: 'Önce restoran ayarlarındaki değişiklikleri kaydedin.' }); return false; }
+    const previous = this.state.menu;
+    const success = await this.publish(change(previous));
+    if (!success) this.set({ menu: previous });
+    return success;
+  };
   reload = async (admin = false, discard = false) => {
     if (this.state.saving || (this.state.dirty && !discard)) return;
     const generation = ++this.generation;

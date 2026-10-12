@@ -78,13 +78,7 @@ export function QRCodeView({ restaurantName }: { restaurantName: string }) {
               fgColor="#1f1f1f"
               bgColor="#faf6f0"
               level="M"
-              includeMargin={false}
-              imageSettings={{
-                src: 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#d9632a"/><text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" font-family="Georgia" font-size="18" font-weight="bold" fill="white">AS</text></svg>`),
-                height: 40,
-                width: 40,
-                excavate: true,
-              }}
+              marginSize={4}
             />
           </div>
 

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useMenu } from '@/context';
 import { formatPrice } from './Badge';
+import { AccountSettings } from './AccountSettings';
 import { QRCodeView } from './QRCodeView';
 import type { MenuItem, Category } from '@/types';
 
@@ -27,13 +28,7 @@ type Tab = 'overview' | 'menu' | 'settings' | 'qr';
 
 export function Dashboard({ onLogout, onViewMenu }: { onLogout: () => void; onViewMenu: () => void }) {
   const [tab, setTab] = useState<Tab>('overview');
-  const { restaurant, categories, items, dirty, saving, error, publish, reload } = useMenu();
-  const [notice, setNotice] = useState('');
-  const backup = () => {
-    const url = URL.createObjectURL(new Blob([JSON.stringify({ restaurant, categories, items }, null, 2)], { type: 'application/json' }));
-    const link = document.createElement('a'); link.href = url; link.download = 'menu-yedek.json'; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
+  const { restaurant, categories, items, dirty, saving, error } = useMenu();
 
   const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Genel Bakış', icon: <LayoutDashboard className="h-5 w-5" /> },
@@ -127,19 +122,14 @@ export function Dashboard({ onLogout, onViewMenu }: { onLogout: () => void; onVi
       <main className="flex-1 lg:ml-64">
         <div className="mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
           <div className="mb-6 rounded-xl border border-white/10 bg-ink-800 p-4">
-            <p className="text-sm" role="status">{dirty ? 'Yayınlanmamış değişiklikler var.' : notice || 'Menü güncel.'}</p>
-            <p className="mt-1 text-xs text-ink-300">Düzenlemeler taslakta tutulur. Yayından en geç 1 dakika sonra menüyü açan veya yenileyen ziyaretçiler güncel halini görür.</p>
-            {error && <p role="alert" className="mt-2 text-red-300">{error} <a href="#login" className="underline">Giriş ekranı</a></p>}
-            <div className="mt-3 flex flex-wrap gap-3">
-              <button disabled={!dirty || saving} className="rounded-lg bg-primary-600 px-4 py-2 disabled:opacity-50" onClick={async () => { if (await publish()) setNotice('Menü başarıyla yayınlandı.'); }}>{saving ? 'Yayınlanıyor…' : 'Değişiklikleri Yayınla'}</button>
-              <button disabled={saving} className="underline" onClick={backup}>Taslağı yedekle</button>
-              <button disabled={saving} className="underline" onClick={() => { if (!dirty || confirm('Taslak silinip yayınlanan menü yüklensin mi?')) void reload(true, true).catch(() => {}); }}>Güncel menüyü yükle</button>
-            </div>
+            <p className="text-sm" role="status">{saving ? 'Kaydediliyor…' : dirty ? 'Formdaki değişiklikleri Kaydet düğmesiyle tamamlayın.' : 'Menü güncel.'}</p>
+            <p className="mt-1 text-xs text-ink-300">Kategori, silme, sıralama ve ürün durumu değişiklikleri hemen kaydedilir. Ürün ve restoran formlarında Kaydet düğmesini kullanın. Ziyaretçiler değişiklikleri en geç 1 dakika sonra görür.</p>
+            {error && <p role="alert" className="mt-2 text-red-300">{error} İşlemi tekrar deneyin.</p>}
           </div>
           <fieldset disabled={saving} className="min-w-0">
           {tab === 'overview' && <Overview items={items} categories={categories} restaurantName={restaurant.name} setTab={setTab} />}
           {tab === 'menu' && <MenuManager />}
-          {tab === 'settings' && <RestaurantSettings />}
+          {tab === 'settings' && <><RestaurantSettings /><AccountSettings /></>}
           {tab === 'qr' && <QRCodeView restaurantName={restaurant.name} />}
           </fieldset>
         </div>
@@ -231,9 +221,9 @@ function MenuManager() {
 
   const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (newCatName.trim()) {
-      addCategory(newCatName.trim(), newCatIcon);
+      if (!await addCategory(newCatName.trim(), newCatIcon)) return;
       setNewCatName('');
       setShowCatForm(false);
     }
@@ -557,7 +547,7 @@ function ItemFormModal({
             </button>
             <button type="submit"
               className="flex-1 rounded-xl bg-primary-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700">
-              {saving ? 'Kaydediliyor…' : item ? 'Güncelle ve Yayınla' : 'Ekle ve Yayınla'}
+              {saving ? 'Kaydediliyor…' : item ? 'Kaydet' : 'Ekle'}
             </button>
           </div>
         </form>
@@ -635,7 +625,7 @@ function RestaurantSettings() {
             type="submit"
             className="rounded-xl bg-primary-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700"
           >
-            {saving ? 'Kaydediliyor…' : 'Ayarları Kaydet ve Yayınla'}
+            {saving ? 'Kaydediliyor…' : 'Ayarları Kaydet'}
           </button>
           {saved && (
             <span className="flex items-center gap-1.5 text-sm font-medium text-success animate-fade-in">

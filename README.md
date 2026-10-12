@@ -26,18 +26,18 @@ npm run dev
 3. Build command: `npm run build`, Publish directory: `dist`. Functions ayarı `netlify.toml` içinde hazırdır.
 4. Netlify ortam değişkenlerine `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` ekleyin (Functions kapsamı). Bunlara `VITE_` öneki eklemeyin.
 5. `VITE_PUBLIC_MENU_URL` değerini kalıcı HTTPS menü adresi olarak belirleyin (Build kapsamı). Örnek: `https://restoraniniz.netlify.app`. QR kodları basmadan önce ayarlayın.
-6. Yayınlayın; `/#admin` üzerinden giriş yapın. İlk açılış örnek menüyü gösterir. Değişiklik yapıp **Değişiklikleri Yayınla** düğmesine basın. Başka bir cihazdan menüyü kontrol edin.
+6. Yayınlayın; `/#admin` üzerinden giriş yapın. İlk açılış örnek menüyü gösterir. Ürün veya restoran formunu **Kaydet** düğmesiyle kaydedin. Başka bir cihazdan menüyü kontrol edin.
 
 API'ler Functions olarak paketlendiğinden yalnızca `dist` klasörünü sürükleyip bırakmak yeterli değildir. Git tabanlı tam derleme kullanın.
 
 ## Kullanım ve kayıt
 
-- Ürün formundaki **Güncelle ve Yayınla / Ekle ve Yayınla** ve restoran ayarlarındaki **Ayarları Kaydet ve Yayınla** düğmeleri doğrudan sunucuya kaydeder. Başarısız işlem formu kapatmaz ve girilen değerleri korur. Açık diğer taslaklar da aynı kayıtla yayınlanır.
-- Kategori ekleme/silme, ürün sıralama ve görünürlük gibi hızlı işlemler taslakta tutulur; üstteki **Değişiklikleri Yayınla** ile kaydedilir. Restoran formundaki alanlar da üstteki yayın düğmesine dahildir.
-- Taslaklar henüz sunucuya kaydedilmez; sayfa kapatılmadan önce yayınlanmalı veya JSON yedeği indirilmelidir. Yedek içe aktarma bu sürümde yoktur.
+- Ürün formundaki **Kaydet / Ekle** ve restoran ayarlarındaki **Ayarları Kaydet** düğmeleri doğrudan sunucuya kaydeder. Başarısız işlem formu kapatmaz ve girilen değerleri korur.
+- Kategori ekleme/silme, ürün silme, sıralama ve görünürlük değişiklikleri hemen kaydedilir. Başarısız hızlı işlemler eski görünümüne döner ve hata gösterilir.
+- Genel yayınlama, taslak yedekleme ve güncel menü yükleme düğmeleri kaldırıldı. Restoran formunda bekleyen değişiklik varsa diğer işlemlerden önce kaydedin.
 - Başarılı yayın kalıcı Blobs kaydı oluşturur. Menü değişikliği yeni Netlify deploy'u gerektirmez.
 - Ziyaretçi API'si CDN'de 60 saniye önbelleklenir. Açık müşteri sayfalarında otomatik sorgulama yoktur; yeni menüyü görmek için yenileyin.
-- Eşzamanlı düzenlemede eski sürümle kayıt reddedilir. Taslağı yedekleyin, güncel menüyü yükleyin ve değişiklikleri yeniden uygulayın.
+- Eşzamanlı düzenlemede eski sürümle kayıt reddedilir. Girdiğiniz değerleri not alın, sayfayı yenileyin ve değişiklikleri yeniden uygulayın.
 - Üretim menüsü `qrmenu-production` deposundadır ve yeni deploy'larda korunur. Önizlemeler deploy kimliğine göre ayrı depolar kullanır; üretim menüsünü değiştirmez. Önizleme depoları yeni deploy'a taşınmaz.
 - Yönetici oturumu 8 saat geçerlidir. Çıkış, sunucudaki oturumu siler. Şifre hash'i değişince önceki oturumlar geçersiz olur. Süresi dolan oturum kayıtları erişim sağlamaz ancak otomatik temizleme henüz yoktur; uzun vadede periyodik bakım yapılabilir.
 - Giriş/oturum API'sinde IP ve alan adı başına dakikada 20 istek sınırı vardır. Bu platform kuralının canlı ortamda doğrulanması gerekir.
@@ -53,7 +53,7 @@ Arka plan varsayılanı `/img/background/full-bg-c.jpg` dosyasıdır. Restoran a
 
 Netlify Dev'in bazı sürümlerinde okuma yanıtında ETag gelmediğinde sürüm, listeleme verisiyle doğrulanarak okunur. Mevcut kayıt hiçbir zaman `initial` olarak işaretlenmez; sürüm belirlenemezse veri üzerine yazılmaz. İstemcide de eski yükleme yanıtları yeni taslak veya kayıt sonucunu değiştiremez. QR için `VITE_PUBLIC_MENU_URL=pilavcibaba.netlify.app` gibi şemasız alan adları otomatik olarak HTTPS bağlantısına çevrilir.
 
-Bu güncellemede derleme, kod kontrolü ve 22 test başarılıdır. Yerel tarayıcı testinde Instagram profil bağlantısı ve boş isteğe bağlı alanlarla kayıt; fiyat/görsel güncelleme sonrası çıkış–yeniden girişte kalıcılık; mobil taşma kontrolü, görsel büyütme ve Konum paneli doğrulanmıştır. Canlı ortamı güncellemek için değişen kaynakları Netlify'da yeniden deploy edin. `.env` dosyanız ve mevcut Blobs kayıtları bu kod güncellemesiyle değiştirilmez.
+Bu güncellemede derleme, kod kontrolü ve 25 test başarılıdır. Yerel tarayıcı testinde Instagram profil bağlantısı ve boş isteğe bağlı alanlarla kayıt; fiyat/görsel güncelleme sonrası çıkış–yeniden girişte kalıcılık; mobil taşma kontrolü, görsel büyütme ve Konum paneli doğrulanmıştır. Canlı ortamı güncellemek için değişen kaynakları Netlify'da yeniden deploy edin. `.env` dosyanız ve mevcut Blobs kayıtları bu kod güncellemesiyle değiştirilmez.
 
 ## Ücretsiz plan sınırları
 
@@ -75,3 +75,11 @@ Testler: yetkisiz erişim, hatalı parola, oturum süresi/iptali, kaynak kontrol
 Yerel Netlify Dev ve gerçek yerel Blobs ile tarayıcıda giriş, kategori seçimi, 99,50 TL fiyatla ürün ekleme, yayınlama, yenileme sonrası kalıcılık ve çıkış sonrası erişim koruması ayrıca doğrulandı. Test hesabı ve test verileri kaynak projeye dahil edilmedi.
 
 Bağımlılık denetimi: üretim paketlerinde bilinen açık bulunmadı. Uyumlu güncellemeler uygulandı; geliştirme araçlarının geçişli bağımlılıklarında 24 bildirim (20 yüksek, 2 orta, 2 düşük) kaldı. Bunlar ağırlıklı olarak Netlify CLI/Tailwind araç zincirindedir; zorunlu sürüm düşürme veya Tailwind ana sürüm geçişi yapan `npm audit fix --force` uygulanmadı. Geliştirme sunucusunu internete açmayın; bu araçlar için düzeltme sürümleri takip edilmelidir.
+
+## Giriş bilgilerini değiştirme ve QR
+
+Restoran Ayarları → Giriş Bilgileri bölümünden kullanıcı adı ve şifre değiştirilebilir. Mevcut şifre zorunludur. Yeni şifre boşsa mevcut şifre korunur; doluysa en az 12 karakter olmalıdır. Değişiklikten sonra tüm eski oturumlar geçersiz olur ve yeni bilgilerle tekrar giriş gerekir. Şifre yalnızca rastgele tuzla scrypt özeti olarak özel Blobs kaydında saklanır. Canlı hesaptaki değişiklikler yeni üretim deploy'larında korunur.
+
+Hesap kurtarma: `npm run admin:setup` ile yeni başlangıç bilgileri üretip Netlify'daki `ADMIN_EMAIL` / `ADMIN_PASSWORD_HASH` değerlerini güncelleyin ve yeniden deploy edin. Başlangıç bilgileri değiştiğinde paneldeki eski hesap geçersiz olur, yeni ortam bilgileriyle giriş yapılır. Bu değerleri sıradan deploy'larda değiştirmeyin.
+
+QR ortasındaki turuncu AS görseli kaldırıldı; indirilen ve yazdırılan QR da logosuzdur. `VITE_PUBLIC_MENU_URL` derleme sırasında okunur. Ortam değişkenini değiştirdikten sonra GitHub push ile tetiklenen yeni başarılı üretim deploy'u yeterlidir; yalnızca ortam değişkenini kaydetmek mevcut deploy'u değiştirmez. Eski indirilmiş veya basılmış QR'lar otomatik güncellenmez.

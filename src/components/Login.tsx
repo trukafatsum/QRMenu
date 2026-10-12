@@ -53,14 +53,14 @@ export function Login({ onLogin, onBack }: { onLogin: () => void | Promise<void>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-ink-200">E-posta</label>
+              <label className="mb-1.5 block text-sm font-medium text-ink-200">Kullanıcı adı veya e-posta</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-400" />
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="E-posta adresiniz"
+                  placeholder="Kullanıcı adı veya e-posta"
                   autoComplete="username"
                   className="w-full rounded-xl border border-white/10 bg-ink-800/60 py-3 pl-11 pr-4 text-sm text-white placeholder-ink-500 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
                   required

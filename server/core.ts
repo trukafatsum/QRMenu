@@ -1,3 +1,4 @@
+import { readRecord } from './menu-repository';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import type { Context } from '@netlify/functions';
@@ -42,6 +43,18 @@ export function credentials() {
   if (!email || !hash || !/^[a-f0-9]{32}:[a-f0-9]{128}$/.test(hash)) return null;
   return { email, hash, version: digest(email + hash) };
 }
+export async function account(context: Context) {
+  const bootstrap = credentials();
+  if (!bootstrap) return null;
+  const record = await readRecord(storage(context), 'account');
+  const saved = record?.data as { email: string; hash: string; bootstrap: string } | undefined;
+  const config = saved?.bootstrap === bootstrap.version ? { email: saved.email, hash: saved.hash, version: digest(saved.email + saved.hash) } : bootstrap;
+  return { ...config, bootstrap: bootstrap.version, etag: record?.etag };
+}
+export function hashPassword(password: string) {
+  const salt = randomBytes(16).toString('hex');
+  return `${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
+}
 export function token(request: Request) {
   const value = request.headers.get('cookie')?.split(';').map(v => v.trim()).find(v => v.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1);
   return value && /^[a-f0-9]{64}$/.test(value) ? value : null;
@@ -51,7 +64,7 @@ export function cookie(request: Request, value: string, age: number) {
 }
 export async function authenticated(request: Request, context: Context) {
   const key = token(request);
-  const config = credentials();
+  const config = await account(context);
   if (!key || !config) return false;
   const session = await storage(context).get(`sessions/${digest(key)}`, { type: 'json' }) as { expires: number; version: string } | null;
   return !!session && session.expires > Date.now() && session.version === config.version;

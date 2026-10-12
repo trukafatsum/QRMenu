@@ -157,3 +157,31 @@ describe('Persistent menu', () => {
     expect(result.menu.restaurant.instagram).toBe('pilavcibaba');
   });
 });
+
+describe('Account changes', () => {
+  it('requires authentication, same origin and the current password', async () => {
+    const data = { username: 'owner', currentPassword: password, newPassword: 'new-password-12345' };
+    expect((await auth(request('/api/account', 'POST', data), context)).status).toBe(401);
+    const session = await login();
+    expect((await auth(request('/api/account', 'POST', data, session, 'https://evil.example'), context)).status).toBe(403);
+    expect((await auth(request('/api/account', 'POST', { ...data, currentPassword: 'wrong' }, session), context)).status).toBe(400);
+    expect((await auth(request('/api/account', 'POST', { ...data, newPassword: 'short' }, session), context)).status).toBe(400);
+    expect(memory.has('qrmenu-production/account')).toBe(false);
+  });
+  it('persists a hashed password, revokes every old session and supports env recovery', async () => {
+    const first = await login(); const second = await login();
+    const nextPassword = 'new-password-12345';
+    expect((await auth(request('/api/account', 'POST', { username: 'Owner', currentPassword: password, newPassword: nextPassword }, first), context)).status).toBe(200);
+    expect(JSON.stringify(memory.get('qrmenu-production/account'))).not.toContain(nextPassword);
+    expect((await menu(request('/api/admin-menu', 'GET', undefined, second), context)).status).toBe(401);
+    expect((await auth(request('/api/login', 'POST', { email: 'admin@example.com', password }), context)).status).toBe(401);
+    const logged = await auth(request('/api/login', 'POST', { email: 'owner', password: nextPassword }), { ...context, deploy: { ...context.deploy, id: 'new-deploy' } } as Context);
+    expect(logged.status).toBe(200);
+    const session = logged.headers.get('set-cookie')!.split(';')[0];
+    emulator.missingGetETag = true;
+    expect((await auth(request('/api/account', 'POST', { username: 'owner2', currentPassword: nextPassword, newPassword: '' }, session), context)).status).toBe(200);
+    expect((await auth(request('/api/login', 'POST', { email: 'owner2', password: nextPassword }), context)).status).toBe(200);
+    process.env.ADMIN_EMAIL = 'recovery@example.com';
+    expect((await auth(request('/api/login', 'POST', { email: 'recovery@example.com', password }), context)).status).toBe(200);
+  });
+});

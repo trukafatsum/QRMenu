@@ -25,7 +25,7 @@ export default async function handler(request: Request, context: Context) {
     }
     if (typeof input.revision !== 'string' || !input.revision || input.revision.length > 200) return json({ error: 'Menü sürümü gerekli.' }, 400);
     const result = await store.setJSON('menu', parsed.data, input.revision === 'initial' ? { onlyIfNew: true } : { onlyIfMatch: input.revision });
-    if (!result.modified) return json({ error: 'Menü başka bir oturumda değişti. Taslağınızı yedekleyip güncel menüyü yükleyin.' }, 409);
+    if (!result.modified) return json({ error: 'Menü başka bir oturumda değişti. Girdiğiniz değerleri not alın, sayfayı yenileyip tekrar deneyin.' }, 409);
     return json({ menu: parsed.data, revision: result.etag });
   } catch (error) {
     console.error('Menu failed', error instanceof Error ? error.message : 'unknown');
