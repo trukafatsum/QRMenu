@@ -11,7 +11,7 @@
 .guest-button-location{background:var(--guest-blue)}
 .guest-button[aria-pressed=true]{box-shadow:0 0 0 2px #ffffff42}
 .guest-main{min-height:100vh;min-height:100dvh;padding:100px 20px 80px;display:flex;align-items:center;justify-content:center}
-.guest-panel{background:rgba(26,29,32,.86);border-radius:18px;overflow:hidden;box-shadow:0 15px 65px #0004;backdrop-filter:blur(6px);animation:guest-rise .28s ease-out}
+.guest-panel{background:rgba(26,29,32,.86);border-radius:18px;overflow:hidden;box-shadow:0 15px 65px #0004;animation:guest-rise .28s ease-out}
 .guest-menu-panel{width:100%;max-width:400px;display:flex;flex-direction:column;max-height:70vh;max-height:min(70dvh,calc(100dvh - 170px))}
 .guest-categories{flex-shrink:0;display:flex;align-items:center;gap:8px;overflow-x:auto;padding:14px 18px;background:rgba(25,28,30,.95);scrollbar-width:thin;scrollbar-color:#767676 transparent}
 .guest-category{flex-shrink:0;padding:8px 13px;border:1px solid var(--guest-yellow);color:var(--guest-yellow);border-radius:6px;font-size:14px;line-height:1.2;transition:background .15s}
