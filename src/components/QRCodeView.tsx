@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, QrCode } from 'lucide-react';
+import { publicMenuUrl } from '../urls';
 
 export function QRCodeView({ restaurantName }: { restaurantName: string }) {
   const qrRef = useRef<HTMLDivElement | null>(null);
-  const configuredUrl = import.meta.env.VITE_PUBLIC_MENU_URL?.trim();
+  const configuredUrl = publicMenuUrl(import.meta.env.VITE_PUBLIC_MENU_URL);
   const menuUrl = configuredUrl || window.location.origin;
   const safeName = restaurantName.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 

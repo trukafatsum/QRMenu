@@ -133,7 +133,7 @@ export function Dashboard({ onLogout, onViewMenu }: { onLogout: () => void; onVi
             <div className="mt-3 flex flex-wrap gap-3">
               <button disabled={!dirty || saving} className="rounded-lg bg-primary-600 px-4 py-2 disabled:opacity-50" onClick={async () => { if (await publish()) setNotice('Menü başarıyla yayınlandı.'); }}>{saving ? 'Yayınlanıyor…' : 'Değişiklikleri Yayınla'}</button>
               <button disabled={saving} className="underline" onClick={backup}>Taslağı yedekle</button>
-              <button disabled={saving} className="underline" onClick={() => { if (!dirty || confirm('Taslak silinip yayınlanan menü yüklensin mi?')) void reload(true).catch(() => {}); }}>Güncel menüyü yükle</button>
+              <button disabled={saving} className="underline" onClick={() => { if (!dirty || confirm('Taslak silinip yayınlanan menü yüklensin mi?')) void reload(true, true).catch(() => {}); }}>Güncel menüyü yükle</button>
             </div>
           </div>
           <fieldset disabled={saving} className="min-w-0">
@@ -219,7 +219,7 @@ function Overview({
 }
 
 function MenuManager() {
-  const { categories, items, addCategory, deleteCategory, addItem, updateItem, deleteItem, reorderItems } = useMenu();
+  const { categories, items, addCategory, deleteCategory, saveItem, updateItem, deleteItem, reorderItems } = useMenu();
   const [expandedCat, setExpandedCat] = useState<string | null>(categories[0]?.id ?? null);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [showItemForm, setShowItemForm] = useState(false);
@@ -227,6 +227,7 @@ function MenuManager() {
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('Soup');
   const [newItemCategory, setNewItemCategory] = useState('');
+  const [newItemId, setNewItemId] = useState('');
 
   const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -323,7 +324,7 @@ function MenuManager() {
                 </button>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => { setNewItemCategory(cat.id); setShowItemForm(true); }}
+                    onClick={() => { setNewItemCategory(cat.id); setNewItemId(`item-${crypto.randomUUID()}`); setShowItemForm(true); }}
                     className="flex items-center gap-1 rounded-lg bg-primary-500/15 px-3 py-1.5 text-xs font-medium text-primary-400 transition hover:bg-primary-500/25"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -405,14 +406,11 @@ function MenuManager() {
           item={editingItem}
           categories={sortedCategories}
           onClose={() => { setShowItemForm(false); setEditingItem(null); }}
-          onSave={(data) => {
-            if (editingItem) {
-              updateItem(editingItem.id, data);
-            } else {
-              addItem(data as Omit<MenuItem, 'id' | 'sortOrder'> & { sortOrder?: number });
+          onSave={async (data) => {
+            if (await saveItem(data, editingItem?.id ?? newItemId)) {
+              setShowItemForm(false);
+              setEditingItem(null);
             }
-            setShowItemForm(false);
-            setEditingItem(null);
           }}
         />
       )}
@@ -431,8 +429,9 @@ function ItemFormModal({
   item: MenuItem | null;
   categories: Category[];
   onClose: () => void;
-  onSave: (data: Partial<MenuItem> & { categoryId: string; name: string; description: string; price: number; image: string; available: boolean; badges: MenuItem['badges'] }) => void;
+  onSave: (data: Omit<MenuItem, 'id' | 'sortOrder'>) => Promise<void>;
 }) {
+  const { error, saving } = useMenu();
   const [name, setName] = useState(item?.name ?? '');
   const [description, setDescription] = useState(item?.description ?? '');
   const [price, setPrice] = useState(item?.price ?? 0);
@@ -451,14 +450,14 @@ function ItemFormModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    await onSave({
       name,
       description,
       price: Number(price),
       oldPrice: oldPrice > 0 ? Number(oldPrice) : undefined,
-      image: image || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&h=650&w=940',
+      image,
       categoryId,
       available,
       badges,
@@ -480,6 +479,8 @@ function ItemFormModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          <p className="text-xs text-ink-300">Kaydettiğinizde fiyat ve görsel dahil ürün bilgileri sunucuya yazılır. Diğer açık taslak değişiklikleri de birlikte yayınlanır.</p>
+          {error && <p role="alert" className="whitespace-pre-line rounded-lg bg-red-950 p-3 text-sm text-red-200">{error}</p>}
           <Field label="Ürün Adı">
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} />
           </Field>
@@ -498,7 +499,7 @@ function ItemFormModal({
           </div>
 
           <Field label="Görsel URL">
-            <input type="url" value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://..." className={inputClass} />
+            <input type="text" value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://... veya /img/products/kola.jpg" className={inputClass} />
           </Field>
 
           <Field label="Kategori">
@@ -556,7 +557,7 @@ function ItemFormModal({
             </button>
             <button type="submit"
               className="flex-1 rounded-xl bg-primary-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700">
-              {item ? 'Güncelle' : 'Ekle'}
+              {saving ? 'Kaydediliyor…' : item ? 'Güncelle ve Yayınla' : 'Ekle ve Yayınla'}
             </button>
           </div>
         </form>
@@ -567,23 +568,21 @@ function ItemFormModal({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-ink-200">{label}</label>
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-medium text-ink-200">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 
 function RestaurantSettings() {
-  const { restaurant, updateRestaurant } = useMenu();
-  const [form, setForm] = useState(restaurant);
+  const { restaurant: form, updateRestaurant: setForm, saveRestaurant, error, saving } = useMenu();
   const [saved, setSaved] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateRestaurant(form);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaved(false);
+    setSaved(await saveRestaurant(form));
   };
 
   const fields: { key: keyof typeof form; label: string; type?: string }[] = [
@@ -591,12 +590,13 @@ function RestaurantSettings() {
     { key: 'tagline', label: 'Slogan' },
     { key: 'description', label: 'Açıklama' },
     { key: 'coverImage', label: 'Kapak Görseli URL' },
+    { key: 'backgroundImage', label: 'Menü arka plan görseli (boşsa örnek tasarım kullanılır)' },
     { key: 'logoText', label: 'Logo Metni (kısaltma)' },
     { key: 'address', label: 'Adres' },
     { key: 'phone', label: 'Telefon' },
     { key: 'hours', label: 'Çalışma Saatleri' },
     { key: 'wifiPassword', label: 'Wi-Fi Şifresi' },
-    { key: 'instagram', label: 'Instagram (kullanıcı adı)' },
+    { key: 'instagram', label: 'Instagram (kullanıcı adı, @adı veya profil bağlantısı)' },
     { key: 'mapsUrl', label: 'Google Maps URL' },
   ];
 
@@ -608,20 +608,22 @@ function RestaurantSettings() {
       <p className="mt-1 text-sm text-ink-300">Restoran bilgilerinizi güncelleyin</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-2xl border border-white/5 bg-ink-800/60 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
+        <p className="text-xs text-ink-300">Restoran adı dışındaki bilgiler isteğe bağlıdır. Kaydet düğmesi tüm değişiklikleri sunucuya yayınlar.</p>
+        {error && <p role="alert" className="whitespace-pre-line rounded-lg bg-red-950 p-3 text-sm text-red-200">{error}</p>}
         {fields.map((f) => (
           <Field key={f.key} label={f.label}>
             {f.key === 'description' ? (
               <textarea
-                value={form[f.key]}
-                onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                value={form[f.key] ?? ''}
+                onChange={(e) => { setSaved(false); setForm({ ...form, [f.key]: e.target.value }); }}
                 rows={3}
                 className={inputClass}
               />
             ) : (
               <input
                 type={f.type ?? 'text'}
-                value={form[f.key]}
-                onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                value={form[f.key] ?? ''}
+                onChange={(e) => { setSaved(false); setForm({ ...form, [f.key]: e.target.value }); }}
                 className={inputClass}
               />
             )}
@@ -633,12 +635,12 @@ function RestaurantSettings() {
             type="submit"
             className="rounded-xl bg-primary-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition hover:bg-primary-700"
           >
-            Ayarları Taslağa Uygula
+            {saving ? 'Kaydediliyor…' : 'Ayarları Kaydet ve Yayınla'}
           </button>
           {saved && (
             <span className="flex items-center gap-1.5 text-sm font-medium text-success animate-fade-in">
               <Check className="h-4 w-4" />
-              Taslağa eklendi; üstteki Yayınla düğmesiyle kaydedin
+              Sunucuya kaydedildi ve yayınlandı
             </span>
           )}
         </div>

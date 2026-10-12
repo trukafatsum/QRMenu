@@ -28,6 +28,7 @@ export interface RestaurantInfo {
   tagline: string;
   description: string;
   coverImage: string;
+  backgroundImage?: string;
   logoText: string;
   address: string;
   phone: string;

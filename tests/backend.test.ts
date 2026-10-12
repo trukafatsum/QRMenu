@@ -3,9 +3,11 @@ import { scryptSync } from 'node:crypto';
 import type { Context } from '@netlify/functions';
 
 const memory = vi.hoisted(() => new Map<string, { data: unknown; etag: string }>());
+const emulator = vi.hoisted(() => ({ missingGetETag: false }));
 vi.mock('@netlify/blobs', () => ({ getStore: ({ name }: { name: string }) => ({
   get: async (key: string) => memory.get(name + '/' + key)?.data ?? null,
-  getWithMetadata: async (key: string) => memory.get(name + '/' + key) ?? null,
+  getWithMetadata: async (key: string) => { const entry = memory.get(name + '/' + key); return entry ? { ...entry, etag: emulator.missingGetETag ? undefined : entry.etag } : null; },
+  list: async () => ({ blobs: [...memory.entries()].filter(([key]) => key.startsWith(name + '/')).map(([key, value]) => ({ key: key.slice(name.length + 1), etag: value.etag })) }),
   delete: async (key: string) => { memory.delete(name + '/' + key); },
   setJSON: async (key: string, data: unknown, options: { onlyIfNew?: boolean; onlyIfMatch?: string } = {}) => {
     const old = memory.get(name + '/' + key);
@@ -33,6 +35,7 @@ async function login() {
   return result.headers.get('set-cookie')!.split(';')[0];
 }
 beforeEach(() => {
+  emulator.missingGetETag = false;
   memory.clear(); process.env.ADMIN_EMAIL = 'admin@example.com'; process.env.ADMIN_PASSWORD_HASH = hash;
 });
 describe('Authentication and authorization', () => {
@@ -74,6 +77,18 @@ describe('Authentication and authorization', () => {
   });
 });
 describe('Persistent menu', () => {
+  it('recovers missing GET ETags without mistaking existing data for the initial menu', async () => {
+    const session = await login();
+    await menu(request('/api/admin-menu', 'PUT', { menu: initialMenuData, revision: 'initial' }, session), context);
+    emulator.missingGetETag = true;
+    const loaded = await (await menu(request('/api/admin-menu', 'GET', undefined, session), context)).json();
+    expect(loaded.revision).not.toBe('initial');
+    loaded.menu.items[0].price = 321.5;
+    expect((await menu(request('/api/admin-menu', 'PUT', loaded, session), context)).status).toBe(200);
+    const again = await (await menu(request('/api/admin-menu', 'GET', undefined, session), context)).json();
+    expect(again.menu.items[0].price).toBe(321.5);
+    expect(again.revision).not.toBe(loaded.revision);
+  });
   it('saves and reads changes, keeps private responses out of shared caches', async () => {
     const session = await login();
     const changed = structuredClone(initialMenuData); changed.items[0].price = 99.5;
@@ -109,5 +124,36 @@ describe('Persistent menu', () => {
     const session = await login();
     expect((await menu(request('/api/admin-menu', 'PUT', {}, session), context)).status).toBe(400);
     expect((await menu(request('/api/admin-menu', 'PUT', { x: 'a'.repeat(512001) }, session), context)).status).toBe(400);
+  });
+  it('accepts Instagram username, @username and full profile URL, plus empty optional fields', () => {
+    for (const instagram of ['pilavci.baba', '@pilavci.baba', 'https://www.instagram.com/pilavci.baba/?igsh=test', 'instagram.com/pilavci.baba/']) {
+      const input = structuredClone(initialMenuData);
+      Object.assign(input.restaurant, { instagram, mapsUrl: '', coverImage: '' });
+      input.items[0].image = '/img/products/kola.jpg';
+      const result = menuSchema.parse(input);
+      expect(result.restaurant.instagram).toBe('pilavci.baba');
+      expect(result.items[0].image).toBe('/img/products/kola.jpg');
+    }
+  });
+  it('returns Turkish field-specific errors instead of raw regex messages', async () => {
+    const session = await login(); const input = structuredClone(initialMenuData);
+    input.restaurant.instagram = 'hatalı profil!';
+    const response = await menu(request('/api/admin-menu', 'PUT', { menu: input, revision: 'initial' }, session), context);
+    expect(response.status).toBe(400);
+    const result = await response.json();
+    expect(result.error).toContain('Instagram:'); expect(result.error).not.toContain('Invalid string');
+    expect(result.fields[0].field).toBe('restaurant.instagram');
+  });
+  it('keeps prices and images alongside categories and restaurant edits after logging in again', async () => {
+    const session = await login(); const input = structuredClone(initialMenuData);
+    input.categories[0].name = 'Yiyecekler'; input.items[0].price = 159.5; input.items[0].image = '/img/products/kumru.jpg';
+    input.restaurant.instagram = 'https://instagram.com/pilavcibaba/';
+    expect((await menu(request('/api/admin-menu', 'PUT', { menu: input, revision: 'initial' }, session), context)).status).toBe(200);
+    await auth(request('/api/logout', 'POST', undefined, session), context);
+    const next = await login();
+    const result = await (await menu(request('/api/admin-menu', 'GET', undefined, next), context)).json();
+    expect(result.menu.items[0]).toMatchObject({ price: 159.5, image: '/img/products/kumru.jpg' });
+    expect(result.menu.categories[0].name).toBe('Yiyecekler');
+    expect(result.menu.restaurant.instagram).toBe('pilavcibaba');
   });
 });

@@ -1,7 +1,8 @@
 import type { Config, Context } from '@netlify/functions';
 import { initialMenuData } from '../../src/data';
 import { authenticated, body, json, sameOrigin, storage } from '../../server/core';
-import { menuSchema } from '../../server/schema';
+import { menuSchema, validationErrors } from '../../server/schema';
+import { readMenu } from '../../server/menu-repository';
 
 export default async function handler(request: Request, context: Context) {
   try {
@@ -10,7 +11,7 @@ export default async function handler(request: Request, context: Context) {
     if ((admin || request.method === 'PUT') && !await authenticated(request, context)) return json({ error: 'Oturum süresi doldu. Yeniden giriş yapın.' }, 401);
     const store = storage(context);
     if (request.method === 'GET') {
-      const current = await store.getWithMetadata('menu', { type: 'json' });
+      const current = await readMenu(store);
       return json({ menu: current?.data ?? initialMenuData, revision: current?.etag ?? 'initial' }, 200,
         admin ? {} : { 'Cache-Control': 'public, max-age=0, must-revalidate', 'Netlify-CDN-Cache-Control': 'public, s-maxage=60' });
     }
@@ -18,7 +19,10 @@ export default async function handler(request: Request, context: Context) {
     let input;
     try { input = await body(request); } catch { return json({ error: 'Menü verisi geçersiz veya çok büyük.' }, 400); }
     const parsed = menuSchema.safeParse(input?.menu);
-    if (!parsed.success) return json({ error: parsed.error.issues[0]?.message || 'Menü verisi geçersiz.' }, 400);
+    if (!parsed.success) {
+      const fields = validationErrors(parsed.error);
+      return json({ error: fields.map(f => f.message).join('\n'), fields }, 400);
+    }
     if (typeof input.revision !== 'string' || !input.revision || input.revision.length > 200) return json({ error: 'Menü sürümü gerekli.' }, 400);
     const result = await store.setJSON('menu', parsed.data, input.revision === 'initial' ? { onlyIfNew: true } : { onlyIfMatch: input.revision });
     if (!result.modified) return json({ error: 'Menü başka bir oturumda değişti. Taslağınızı yedekleyip güncel menüyü yükleyin.' }, 409);

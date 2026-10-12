@@ -35,8 +35,9 @@ function Pages() {
   const logout = async () => {
     if (dirty && !confirm('Yayınlanmamış değişiklikler silinecek. Çıkış yapılsın mı?')) return;
     try {
+      if (dirty) await reload(true, true);
       await api('/api/logout', { method: 'POST' });
-      setAuthenticated(false); navigate(''); await reload();
+      setAuthenticated(false); navigate('');
     } catch (e) { setMessage(e instanceof Error ? e.message : 'Çıkış yapılamadı.'); }
   };
   if (loading || (page !== 'menu' && checking)) return <div className="p-12 text-center" role="status">Yükleniyor…</div>;
