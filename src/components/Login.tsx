@@ -25,7 +25,7 @@ export function Login({ onLogin, onBack }: { onLogin: () => void | Promise<void>
     <div className="relative flex min-h-screen items-center justify-center px-4">
       <div className="absolute inset-0 overflow-hidden">
         <img
-          src="/img/background/full-bg-c.jpg"
+          src="/img/demo-background.svg"
           alt=""
           className="h-full w-full object-cover opacity-15"
         />

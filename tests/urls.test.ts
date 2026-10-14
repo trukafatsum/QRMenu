@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { publicMenuUrl } from '../src/urls';
 describe('Printed QR menu URL', () => {
   it('normalizes the configured bare Netlify domain to an absolute HTTPS URL', () => {
-    expect(publicMenuUrl('pilavcibaba.netlify.app')).toBe('https://pilavcibaba.netlify.app/');
+    expect(publicMenuUrl('demo-menu.example')).toBe('https://demo-menu.example/');
     expect(publicMenuUrl('https://menu.example/menu/#admin')).toBe('https://menu.example/menu/');
   });
   it('rejects unsafe or empty URLs', () => {

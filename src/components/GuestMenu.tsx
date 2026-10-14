@@ -30,7 +30,7 @@ export function GuestMenu({ onGoToDashboard }: { onGoToDashboard: () => void }) 
   };
   return (
     <div className="guest-menu-page">
-      <div className="guest-backdrop" style={{ backgroundImage: `url(${JSON.stringify(restaurant.backgroundImage || '/img/background/full-bg-c.jpg')})` }} />
+      <div className="guest-backdrop" style={{ backgroundImage: `url(${JSON.stringify(restaurant.backgroundImage || '/img/demo-background.svg')})` }} />
       <header className="guest-header">
         <div className="guest-nav">
           <button className="guest-brand" onClick={() => setPanel(null)} aria-label={`${restaurant.name} ana ekran`}>{restaurant.name}</button>
@@ -78,7 +78,7 @@ export function GuestMenu({ onGoToDashboard }: { onGoToDashboard: () => void }) 
         </section>}
         {!panel && <div className="guest-welcome"><h1>{restaurant.name}</h1>{restaurant.tagline && <p>{restaurant.tagline}</p>}<button className="guest-button guest-button-menu" onClick={() => setPanel('menu')}>Menüyü İncele</button></div>}
       </main>
-      <footer className="guest-footer"><span>© {new Date().getFullYear()} {restaurant.name} QR Menü</span><button onClick={onGoToDashboard} aria-label="Yönetici girişi" title="Yönetici girişi"><Settings size={16} /></button></footer>
+      <footer className="guest-footer"><span>Demo • Ürünler ve fiyatlar örnektir.</span><button onClick={onGoToDashboard} aria-label="Yönetici girişi" title="Yönetici girişi"><Settings size={16} /></button></footer>
       <dialog ref={dialog} className="guest-image-dialog" onClose={() => setZoom(null)} onCancel={() => setZoom(null)} onClick={event => { if (event.target === event.currentTarget) closeZoom(); }} aria-label={zoom ? `${zoom.name} görseli` : 'Ürün görseli'}>
         {zoom && <div className="guest-image-content"><button autoFocus onClick={closeZoom} aria-label="Görseli kapat"><X size={24} /></button><img src={zoom.image || placeholder} onError={onImageError} alt={zoom.name} /><p>{zoom.name} <strong>{formatPrice(zoom.price)}</strong></p></div>}
       </dialog>

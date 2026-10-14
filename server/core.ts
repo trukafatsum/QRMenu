@@ -7,8 +7,8 @@ export const COOKIE = 'qrmenu_session';
 export const TTL = 8 * 60 * 60;
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 export function storeName(context: Context) {
-  if (context.deploy.context === 'production') return 'qrmenu-production';
-  return `qrmenu-preview-${context.deploy.id || 'local'}`;
+  if (context.deploy.context === 'production') return 'qrmenu-demo-production';
+  return `qrmenu-demo-preview-${context.deploy.id || 'local'}`;
 }
 export const storage = (context: Context) => getStore({ name: storeName(context), consistency: 'strong' });
 export function json(data: unknown, status = 200, headers: Record<string, string> = {}) {

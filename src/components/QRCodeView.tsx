@@ -1,12 +1,10 @@
 import { useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, QrCode } from 'lucide-react';
-import { publicMenuUrl } from '../urls';
 
 export function QRCodeView({ restaurantName }: { restaurantName: string }) {
   const qrRef = useRef<HTMLDivElement | null>(null);
-  const configuredUrl = publicMenuUrl(import.meta.env.VITE_PUBLIC_MENU_URL);
-  const menuUrl = configuredUrl || window.location.origin;
+  const menuUrl = window.location.origin + window.location.pathname;
   const safeName = restaurantName.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
   const handleDownload = () => {
@@ -59,7 +57,6 @@ export function QRCodeView({ restaurantName }: { restaurantName: string }) {
     <div className="animate-fade-in">
       <h1 className="font-serif text-2xl font-bold text-white sm:text-3xl">QR Kod</h1>
       <p className="mt-1 text-sm text-ink-300">QR kodu indirin veya yazdırın, masalara yerleştirin</p>
-      {!configuredUrl && <p role="alert" className="mt-3 text-sm text-amber-300">Kalıcı menü adresi ayarlanmamış. Basılı QR hazırlamadan önce yayın adresini yapılandırın.</p>}
 
       <div className="mt-8 flex flex-col items-center">
         <div ref={qrRef} className="rounded-3xl border border-white/10 bg-white p-8 shadow-xl">

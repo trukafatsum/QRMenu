@@ -52,7 +52,7 @@ describe('Menu persistence and request ordering', () => {
   it('uses the exact form candidate for a save without waiting for a React render', async () => {
     const api = vi.fn().mockResolvedValueOnce(response()).mockImplementationOnce(async (_, options) => ({ menu: JSON.parse(options.body).menu, revision: 'v2' }));
     const store = new MenuStore(api); await store.reload(true);
-    const candidate = copy(); candidate.restaurant.instagram = 'pilavcibaba'; candidate.items[0].price = 234.5;
+    const candidate = copy(); candidate.restaurant.instagram = 'demo_menu'; candidate.items[0].price = 234.5;
     await store.publish(candidate);
     expect(store.getSnapshot().menu).toEqual(candidate);
     expect(store.getSnapshot().dirty).toBe(false);

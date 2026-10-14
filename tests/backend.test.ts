@@ -57,7 +57,7 @@ describe('Authentication and authorization', () => {
   });
   it('expires sessions and invalidates them after password changes', async () => {
     const session = await login();
-    const key = 'qrmenu-production/sessions/' + digest(session.split('=')[1]);
+    const key = 'qrmenu-demo-production/sessions/' + digest(session.split('=')[1]);
     const record = memory.get(key)!;
     record.data = { ...(record.data as object), expires: Date.now() - 1 };
     expect((await menu(request('/api/admin-menu', 'GET', undefined, session), context)).status).toBe(401);
@@ -108,8 +108,8 @@ describe('Persistent menu', () => {
     expect((await save(first.revision)).status).toBe(409);
   });
   it('isolates preview data from production', () => {
-    expect(storeName(context)).toBe('qrmenu-production');
-    expect(storeName({ deploy: { context: 'deploy-preview', id: '123' } } as Context)).toBe('qrmenu-preview-123');
+    expect(storeName(context)).toBe('qrmenu-demo-production');
+    expect(storeName({ deploy: { context: 'deploy-preview', id: '123' } } as Context)).toBe('qrmenu-demo-preview-123');
   });
   it('validates prices, URL schemes, duplicate IDs and category references', () => {
     expect(menuSchema.safeParse(initialMenuData).success).toBe(true);
@@ -147,14 +147,14 @@ describe('Persistent menu', () => {
   it('keeps prices and images alongside categories and restaurant edits after logging in again', async () => {
     const session = await login(); const input = structuredClone(initialMenuData);
     input.categories[0].name = 'Yiyecekler'; input.items[0].price = 159.5; input.items[0].image = '/img/products/kumru.jpg';
-    input.restaurant.instagram = 'https://instagram.com/pilavcibaba/';
+    input.restaurant.instagram = 'https://instagram.com/demo_menu/';
     expect((await menu(request('/api/admin-menu', 'PUT', { menu: input, revision: 'initial' }, session), context)).status).toBe(200);
     await auth(request('/api/logout', 'POST', undefined, session), context);
     const next = await login();
     const result = await (await menu(request('/api/admin-menu', 'GET', undefined, next), context)).json();
     expect(result.menu.items[0]).toMatchObject({ price: 159.5, image: '/img/products/kumru.jpg' });
     expect(result.menu.categories[0].name).toBe('Yiyecekler');
-    expect(result.menu.restaurant.instagram).toBe('pilavcibaba');
+    expect(result.menu.restaurant.instagram).toBe('demo_menu');
   });
 });
 
@@ -166,13 +166,13 @@ describe('Account changes', () => {
     expect((await auth(request('/api/account', 'POST', data, session, 'https://evil.example'), context)).status).toBe(403);
     expect((await auth(request('/api/account', 'POST', { ...data, currentPassword: 'wrong' }, session), context)).status).toBe(400);
     expect((await auth(request('/api/account', 'POST', { ...data, newPassword: 'short' }, session), context)).status).toBe(400);
-    expect(memory.has('qrmenu-production/account')).toBe(false);
+    expect(memory.has('qrmenu-demo-production/account')).toBe(false);
   });
   it('persists a hashed password, revokes every old session and supports env recovery', async () => {
     const first = await login(); const second = await login();
     const nextPassword = 'new-password-12345';
     expect((await auth(request('/api/account', 'POST', { username: 'Owner', currentPassword: password, newPassword: nextPassword }, first), context)).status).toBe(200);
-    expect(JSON.stringify(memory.get('qrmenu-production/account'))).not.toContain(nextPassword);
+    expect(JSON.stringify(memory.get('qrmenu-demo-production/account'))).not.toContain(nextPassword);
     expect((await menu(request('/api/admin-menu', 'GET', undefined, second), context)).status).toBe(401);
     expect((await auth(request('/api/login', 'POST', { email: 'admin@example.com', password }), context)).status).toBe(401);
     const logged = await auth(request('/api/login', 'POST', { email: 'owner', password: nextPassword }), { ...context, deploy: { ...context.deploy, id: 'new-deploy' } } as Context);
@@ -184,4 +184,13 @@ describe('Account changes', () => {
     process.env.ADMIN_EMAIL = 'recovery@example.com';
     expect((await auth(request('/api/login', 'POST', { email: 'recovery@example.com', password }), context)).status).toBe(200);
   });
+});
+
+it('starts the demo without exposing a previous business menu', async () => {
+  memory.set('qrmenu-production/menu', { data: { restaurant: { name: 'Former business', phone: 'private' } }, etag: 'legacy' });
+  const response = await menu(request('/api/menu'), context);
+  const result = await response.json();
+  expect(result.menu.restaurant.name).toBe('QR Menü Demo');
+  for (const field of ['address', 'phone', 'hours', 'wifiPassword', 'instagram', 'mapsUrl']) expect(result.menu.restaurant[field]).toBe('');
+  expect(JSON.stringify(result)).not.toContain('Former business');
 });
