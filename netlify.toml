@@ -26,3 +26,7 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[template.environment]
+  ADMIN_EMAIL = "Yönetici e-postanız (npm run admin:setup çıktısı)"
+  ADMIN_PASSWORD_HASH = "npm run admin:setup ile üretilen salt:hash değeri; düz şifre girmeyin"

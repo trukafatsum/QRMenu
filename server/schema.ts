@@ -24,7 +24,7 @@ const id = z.string().min(1).max(100);
 const order = z.number().int().nonnegative();
 const price = z.number().finite().min(0).max(1000000);
 export const menuSchema = z.object({
-  restaurant: z.object({ name, tagline: text, description: text, coverImage: imageUrl,
+  restaurant: z.object({ isDemo: z.boolean().optional(), name, tagline: text, description: text, coverImage: imageUrl,
     backgroundImage: imageUrl.optional(),
     logoText: z.string().trim().max(10), address: text, phone: text, hours: text,
     wifiPassword: text, instagram, mapsUrl: z.string().trim().pipe(optionalUrl) }),

@@ -24,6 +24,7 @@ export interface Category {
 }
 
 export interface RestaurantInfo {
+  isDemo?: boolean;
   name: string;
   tagline: string;
   description: string;

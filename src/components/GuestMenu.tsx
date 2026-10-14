@@ -24,7 +24,7 @@ export function GuestMenu({ onGoToDashboard }: { onGoToDashboard: () => void }) 
   }, [restaurant.name]);
   const closeZoom = () => { dialog.current?.close(); setZoom(null); };
   const location = restaurant.address.trim();
-  const mapSource = location ? `https://www.google.com/maps?q=${encodeURIComponent(location)}&output=embed` : '';
+  const mapSource = !restaurant.isDemo && location ? `https://www.google.com/maps?q=${encodeURIComponent(location)}&output=embed` : '';
   const onImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     if (!event.currentTarget.src.endsWith(placeholder)) event.currentTarget.src = placeholder;
   };
@@ -42,6 +42,7 @@ export function GuestMenu({ onGoToDashboard }: { onGoToDashboard: () => void }) 
       </header>
       <main className="guest-main">
         {panel === 'menu' && <section className="guest-panel guest-menu-panel" aria-label="Restoran menüsü">
+          <div className="guest-intro"><p className="guest-eyebrow">{restaurant.isDemo ? 'KURGUSAL RESTORAN · CANLI DEMO' : restaurant.tagline}</p><h1>{restaurant.name}</h1><p>{restaurant.description}</p></div>
           <nav className="guest-categories" aria-label="Menü kategorileri">
             {sorted.map((category, index) => <button key={category.id} className={`guest-category ${index % 2 ? 'guest-category-blue' : ''}`} aria-pressed={selected?.id === category.id} onClick={() => setSelection(category.id)}>{category.name}</button>)}
           </nav>
@@ -63,22 +64,24 @@ export function GuestMenu({ onGoToDashboard }: { onGoToDashboard: () => void }) 
         </section>}
         {panel === 'location' && <section className="guest-panel guest-location" aria-labelledby="guest-location-title">
           <h1 id="guest-location-title">Bize Ulaşın</h1>
+          {restaurant.isDemo && <><img className="guest-demo-map" src="/img/demo/map.svg" alt="Kurgusal konum illüstrasyonu" /><p className="guest-demo-note">Bu adres, telefon ve sosyal hesap örnektir. Gerçek bir işletmeye yönlendirme yapılmaz.</p></>}
           {mapSource && <iframe src={mapSource} title={`${restaurant.name} konumu`} loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" />}
           <div className="guest-contact">
             {location && <p><MapPin size={18} aria-hidden="true" /><span><strong>Adres</strong>{location}</span></p>}
-            {restaurant.phone && <p><Phone size={18} aria-hidden="true" /><span><strong>Telefon</strong><a href={`tel:${restaurant.phone.replace(/[^+\d]/g, '')}`}>{restaurant.phone}</a></span></p>}
+            {restaurant.phone && <p><Phone size={18} aria-hidden="true" /><span><strong>Telefon</strong>{restaurant.isDemo ? restaurant.phone : <a href={`tel:${restaurant.phone.replace(/[^+\d]/g, '')}`}>{restaurant.phone}</a>}</span></p>}
             {restaurant.hours && <p><Clock size={18} aria-hidden="true" /><span><strong>Çalışma Saatleri</strong>{restaurant.hours}</span></p>}
             {restaurant.wifiPassword && <p><Wifi size={18} aria-hidden="true" /><span><strong>Wi-Fi Şifresi</strong>{restaurant.wifiPassword}</span></p>}
             {!location && !restaurant.phone && !restaurant.hours && <p>İletişim bilgileri henüz eklenmedi.</p>}
             <div className="guest-contact-links">
-              {(restaurant.mapsUrl || location) && <a href={restaurant.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`} target="_blank" rel="noopener noreferrer"><MapPin size={16} /> Yol Tarifi</a>}
-              {restaurant.instagram && <a href={`https://www.instagram.com/${restaurant.instagram}/`} target="_blank" rel="noopener noreferrer"><Instagram size={16} /> Instagram</a>}
+              {!restaurant.isDemo && (restaurant.mapsUrl || location) && <a href={restaurant.mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`} target="_blank" rel="noopener noreferrer"><MapPin size={16} /> Yol Tarifi</a>}
+              {restaurant.isDemo && restaurant.instagram && <span>Instagram · @{restaurant.instagram}</span>}
+              {!restaurant.isDemo && restaurant.instagram && <a href={`https://www.instagram.com/${restaurant.instagram}/`} target="_blank" rel="noopener noreferrer"><Instagram size={16} /> Instagram</a>}
             </div>
           </div>
         </section>}
         {!panel && <div className="guest-welcome"><h1>{restaurant.name}</h1>{restaurant.tagline && <p>{restaurant.tagline}</p>}<button className="guest-button guest-button-menu" onClick={() => setPanel('menu')}>Menüyü İncele</button></div>}
       </main>
-      <footer className="guest-footer"><span>Demo • Ürünler ve fiyatlar örnektir.</span><button onClick={onGoToDashboard} aria-label="Yönetici girişi" title="Yönetici girişi"><Settings size={16} /></button></footer>
+      <footer className="guest-footer"><span>{restaurant.isDemo ? 'Demo • Ürünler ve fiyatlar örnektir.' : `© ${new Date().getFullYear()} ${restaurant.name}`}</span><button onClick={onGoToDashboard} aria-label="Yönetici girişi" title="Yönetici girişi"><Settings size={16} /></button></footer>
       <dialog ref={dialog} className="guest-image-dialog" onClose={() => setZoom(null)} onCancel={() => setZoom(null)} onClick={event => { if (event.target === event.currentTarget) closeZoom(); }} aria-label={zoom ? `${zoom.name} görseli` : 'Ürün görseli'}>
         {zoom && <div className="guest-image-content"><button autoFocus onClick={closeZoom} aria-label="Görseli kapat"><X size={24} /></button><img src={zoom.image || placeholder} onError={onImageError} alt={zoom.name} /><p>{zoom.name} <strong>{formatPrice(zoom.price)}</strong></p></div>}
       </dialog>

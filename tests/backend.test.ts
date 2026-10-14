@@ -126,12 +126,12 @@ describe('Persistent menu', () => {
     expect((await menu(request('/api/admin-menu', 'PUT', { x: 'a'.repeat(512001) }, session), context)).status).toBe(400);
   });
   it('accepts Instagram username, @username and full profile URL, plus empty optional fields', () => {
-    for (const instagram of ['pilavci.baba', '@pilavci.baba', 'https://www.instagram.com/pilavci.baba/?igsh=test', 'instagram.com/pilavci.baba/']) {
+    for (const instagram of ['ornek.demo', '@ornek.demo', 'https://www.instagram.com/ornek.demo/?igsh=test', 'instagram.com/ornek.demo/']) {
       const input = structuredClone(initialMenuData);
       Object.assign(input.restaurant, { instagram, mapsUrl: '', coverImage: '' });
       input.items[0].image = '/img/products/kola.jpg';
       const result = menuSchema.parse(input);
-      expect(result.restaurant.instagram).toBe('pilavci.baba');
+      expect(result.restaurant.instagram).toBe('ornek.demo');
       expect(result.items[0].image).toBe('/img/products/kola.jpg');
     }
   });
@@ -190,7 +190,8 @@ it('starts the demo without exposing a previous business menu', async () => {
   memory.set('qrmenu-production/menu', { data: { restaurant: { name: 'Former business', phone: 'private' } }, etag: 'legacy' });
   const response = await menu(request('/api/menu'), context);
   const result = await response.json();
-  expect(result.menu.restaurant.name).toBe('QR Menü Demo');
-  for (const field of ['address', 'phone', 'hours', 'wifiPassword', 'instagram', 'mapsUrl']) expect(result.menu.restaurant[field]).toBe('');
+  expect(result.menu.restaurant.name).toBe('Örnek Mutfak');
+  expect(result.menu.restaurant.isDemo).toBe(true);
+  for (const field of ['address', 'phone', 'hours', 'wifiPassword', 'instagram', 'mapsUrl']) expect(result.menu.restaurant[field].length).toBeGreaterThan(0);
   expect(JSON.stringify(result)).not.toContain('Former business');
 });

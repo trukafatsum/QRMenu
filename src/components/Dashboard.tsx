@@ -575,7 +575,7 @@ function RestaurantSettings() {
     setSaved(await saveRestaurant(form));
   };
 
-  const fields: { key: keyof typeof form; label: string; type?: string }[] = [
+  const fields: { key: Exclude<keyof typeof form, 'isDemo'>; label: string; type?: string }[] = [
     { key: 'name', label: 'Restoran Adı' },
     { key: 'tagline', label: 'Slogan' },
     { key: 'description', label: 'Açıklama' },
@@ -600,6 +600,10 @@ function RestaurantSettings() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-2xl border border-white/5 bg-ink-800/60 p-6 shadow-lg shadow-black/20 backdrop-blur-sm">
         <p className="text-xs text-ink-300">Restoran adı dışındaki bilgiler isteğe bağlıdır. Kaydet düğmesi tüm değişiklikleri sunucuya yayınlar.</p>
         {error && <p role="alert" className="whitespace-pre-line rounded-lg bg-red-950 p-3 text-sm text-red-200">{error}</p>}
+        <label className="flex items-start gap-3 rounded-lg border border-white/10 p-3 text-sm">
+          <input type="checkbox" checked={form.isDemo ?? false} onChange={e => { setSaved(false); setForm({ ...form, isDemo: e.target.checked }); }} />
+          <span>Demo modu: örnek iletişim bilgileri gerçek bağlantı açmaz. Kendi işletme bilgilerinizi girdikten sonra kapatıp kaydedin.</span>
+        </label>
         {fields.map((f) => (
           <Field key={f.key} label={f.label}>
             {f.key === 'description' ? (
